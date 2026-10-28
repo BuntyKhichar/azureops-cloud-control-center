@@ -1,0 +1,14 @@
+{
+  "project": "AzureOps",
+  "environment": "Local simulation",
+  "generated_at": "2026-10-27T05:56:34.182299+00:00",
+  "total_findings": 1,
+  "findings": [
+    {
+      "category": "NSG Security",
+      "severity": "High",
+      "rule": "Allow-SSH-Public",
+      "message": "Risk: management port 22 allowed from a public source"
+    }
+  ]
+}

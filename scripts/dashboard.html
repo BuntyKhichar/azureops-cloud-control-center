@@ -1,0 +1,221 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AzureOps | Security Dashboard</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f3f6fb;
+      color: #172033;
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      color: #64748b;
+    }
+
+    .tag {
+      display: inline-block;
+      background: #e8eefc;
+      padding: 5px 9px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin: 28px 0;
+    }
+
+    .card, .finding {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .number {
+      font-size: 32px;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    .finding {
+      margin: 12px 0;
+    }
+
+    .severity {
+      font-weight: 700;
+    }
+
+    .high {
+      color: #b91c1c;
+    }
+
+    .medium {
+      color: #b45309;
+    }
+
+    .low {
+      color: #047857;
+    }
+
+    .error {
+      color: #b91c1c;
+      background: #fee2e2;
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    footer {
+      margin-top: 28px;
+      color: #64748b;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>AzureOps</h1>
+  <p class="subtitle">
+    Cloud Infrastructure &amp; Security Control Center
+  </p>
+
+  <span class="tag">LOCAL SIMULATION · SAMPLE DATA</span>
+
+  <div class="cards">
+    <div class="card">
+      <div>Total findings</div>
+      <div class="number" id="total">Loading...</div>
+    </div>
+
+    <div class="card">
+      <div>High severity</div>
+      <div class="number" id="high">Loading...</div>
+    </div>
+
+    <div class="card">
+      <div>Checks represented</div>
+      <div class="number" id="checks">Loading...</div>
+    </div>
+  </div>
+
+  <h2>Security findings</h2>
+
+  <p id="status">Loading security report...</p>
+  <div id="findings"></div>
+
+  <footer>
+    AzureOps portfolio project. Findings are generated from local
+    sample configuration, not live Azure resources.
+    <br>
+    <span id="generated"></span>
+  </footer>
+
+  <script>
+    async function loadReport() {
+      const status = document.getElementById("status");
+      const container = document.getElementById("findings");
+
+      try {
+        const response = await fetch("../data/security_report.json");
+
+        if (!response.ok) {
+          throw new Error(
+            "HTTP " + response.status +
+            ". Check that the JSON report exists."
+          );
+        }
+
+        const report = await response.json();
+        const findings = Array.isArray(report.findings)
+          ? report.findings
+          : [];
+
+        document.getElementById("total").textContent =
+          findings.length;
+
+        document.getElementById("high").textContent =
+          findings.filter(
+            item => (item.severity || "").toLowerCase() === "high"
+          ).length;
+
+        document.getElementById("checks").textContent =
+          new Set(findings.map(item => item.category)).size;
+
+        container.replaceChildren();
+
+        if (findings.length === 0) {
+          status.textContent = "No findings in this report.";
+        } else {
+          status.textContent = "Report loaded successfully.";
+
+          findings.forEach(item => {
+            const card = document.createElement("section");
+            card.className = "finding";
+
+            const category = document.createElement("span");
+            category.className = "tag";
+            category.textContent = item.category || "General";
+
+            const severity = document.createElement("p");
+            severity.className = "severity";
+            const level = (item.severity || "Unspecified").toLowerCase();
+            severity.textContent = level.toUpperCase();
+
+            if (["high", "medium", "low"].includes(level)) {
+              severity.classList.add(level);
+            }
+
+            const message = document.createElement("p");
+            message.textContent = item.message || "No details provided.";
+
+            card.append(category, severity, message);
+
+            if (item.rule) {
+              const rule = document.createElement("p");
+              rule.textContent = "Rule: " + item.rule;
+              card.appendChild(rule);
+            }
+
+            container.appendChild(card);
+          });
+        }
+
+        document.getElementById("generated").textContent =
+          "Report generated: " +
+          (report.generated_at || "Timestamp unavailable");
+
+      } catch (error) {
+        status.textContent =
+          "Could not load the report. " + error.message;
+        status.className = "error";
+
+        document.getElementById("total").textContent = "—";
+        document.getElementById("high").textContent = "—";
+        document.getElementById("checks").textContent = "—";
+
+        container.replaceChildren();
+      }
+    }
+
+    loadReport();
+  </script>
+</body>
+</html>
